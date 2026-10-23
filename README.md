@@ -2,6 +2,8 @@
 
 A local Chrome extension for exporting the **currently open Claude conversation**.
 
+![Claude Conversation Exporter popup showing captured request details and a successful conversation JSON download](screenshot/Screenshot.png)
+
 Choose either output:
 
 - **Download JSON** — fetches the conversation and saves `conversation.json` directly from the extension.
