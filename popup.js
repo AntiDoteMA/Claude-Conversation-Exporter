@@ -7,6 +7,7 @@ import {
 } from './lib/parse.js';
 
 const STORAGE_KEY = 'claudeCapture';
+const DOWNLOAD_URL_LIFETIME_MS = 30000;
 
 // Order + labels mirror the Readme "extract first" list.
 const FIELDS = [
@@ -268,7 +269,9 @@ function downloadJson(filename, text) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  // Keep the object URL alive long enough for Chrome to consume the download
+  // even if focus changes while the save is being committed.
+  setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_URL_LIFETIME_MS);
 }
 
 function prettyPrint(body) {
@@ -377,16 +380,19 @@ async function resetCapture() {
   toast('Capture reset');
 }
 
-function closePopup() {
-  window.close();
+function setupDetailsDismissOnOutsideClick() {
+  const details = $('request-details');
+  if (!details) return;
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!details.open) return;
+    if (details.contains(event.target)) return;
+    details.open = false;
+  });
 }
 
 function init() {
-  // Chrome normally dismisses action popups when focus leaves them. Explicitly
-  // closing here also covers browsers/environments where that native behavior
-  // is disabled or does not fire reliably.
-  window.addEventListener('blur', closePopup, { once: true });
-  window.addEventListener('pagehide', closePopup, { once: true });
+  setupDetailsDismissOnOutsideClick();
 
   $('refresh').addEventListener('click', reloadClaudeTab);
   $('reload-template').addEventListener('click', loadCapture);
