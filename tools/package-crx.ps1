@@ -41,7 +41,7 @@ $files = @(
     "transcript_extract.py",
     "transcript_extract_README.md"
 )
-$directories = @("icons", "lib", "tools")
+$directories = @("icons", "lib", "screenshot", "tools")
 
 try {
     New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null

@@ -5,9 +5,18 @@ import {
   sanitizeCookie,
   parseCurl,
 } from './lib/parse.js';
+import {
+  DOWNLOAD_DISMISS_GRACE_MS,
+  getPopupDismissDelay,
+} from './lib/popup-lifecycle.js';
 
 const STORAGE_KEY = 'claudeCapture';
 const DOWNLOAD_URL_LIFETIME_MS = 30000;
+
+let downloadInProgress = false;
+let dismissHoldUntil = 0;
+let pendingDismissTimer = null;
+let popupFocusLost = false;
 
 // Order + labels mirror the Readme "extract first" list.
 const FIELDS = [
@@ -261,6 +270,8 @@ function setFetchStatus(text, kind) {
 }
 
 function downloadJson(filename, text) {
+  dismissHoldUntil = Date.now() + DOWNLOAD_DISMISS_GRACE_MS;
+
   const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -285,6 +296,7 @@ function prettyPrint(body) {
 async function fetchAndDownload() {
   const btn = $('fetch-download');
   btn.disabled = true;
+  downloadInProgress = true;
 
   try {
     if (!fieldValue('chat_conversations')) {
@@ -330,7 +342,9 @@ async function fetchAndDownload() {
   } catch (e) {
     setFetchStatus(`Error: ${(e && e.message) || e}`, 'err');
   } finally {
+    downloadInProgress = false;
     btn.disabled = false;
+    schedulePopupDismiss();
   }
 }
 
@@ -391,8 +405,45 @@ function setupDetailsDismissOnOutsideClick() {
   });
 }
 
+function closePopup() {
+  window.close();
+}
+
+function schedulePopupDismiss() {
+  if (downloadInProgress || !popupFocusLost) return;
+  if (pendingDismissTimer !== null) return;
+
+  const delay = getPopupDismissDelay(dismissHoldUntil);
+  if (delay <= 0) {
+    closePopup();
+    return;
+  }
+
+  pendingDismissTimer = setTimeout(() => {
+    pendingDismissTimer = null;
+    if (popupFocusLost && !downloadInProgress) closePopup();
+  }, delay);
+}
+
+function cancelPendingPopupDismiss() {
+  popupFocusLost = false;
+  if (pendingDismissTimer !== null) {
+    clearTimeout(pendingDismissTimer);
+    pendingDismissTimer = null;
+  }
+}
+
+function setupPopupDismissOnFocusLoss() {
+  window.addEventListener('blur', () => {
+    popupFocusLost = true;
+    schedulePopupDismiss();
+  });
+  window.addEventListener('focus', cancelPendingPopupDismiss);
+}
+
 function init() {
   setupDetailsDismissOnOutsideClick();
+  setupPopupDismissOnFocusLoss();
 
   $('refresh').addEventListener('click', reloadClaudeTab);
   $('reload-template').addEventListener('click', loadCapture);

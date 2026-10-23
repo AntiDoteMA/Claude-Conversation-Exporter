@@ -19,6 +19,10 @@ import {
   applyCookieHeader,
   applyRequestIds,
 } from '../lib/parse.js';
+import {
+  DOWNLOAD_DISMISS_GRACE_MS,
+  getPopupDismissDelay,
+} from '../lib/popup-lifecycle.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -231,6 +235,24 @@ check(
 check('unknown source has the lowest priority', sourcePriority('whatever'), 0);
 check('empty value is not stored', setField(fields, 'empty', '', 'header'), false);
 check('empty value did not create a field', fields.empty, undefined);
+
+// --- popup dismissal lifecycle ----------------------------------------------
+check('popup closes immediately without a download', getPopupDismissDelay(0, 1000), 0);
+check(
+  'popup dismissal waits for an active download',
+  getPopupDismissDelay(1000 + DOWNLOAD_DISMISS_GRACE_MS, 1000),
+  DOWNLOAD_DISMISS_GRACE_MS
+);
+check(
+  'popup dismissal is deferred during the download grace period',
+  getPopupDismissDelay(1000 + DOWNLOAD_DISMISS_GRACE_MS, 1500),
+  DOWNLOAD_DISMISS_GRACE_MS - 500
+);
+check(
+  'popup dismissal is immediate after the download grace period',
+  getPopupDismissDelay(1000 + DOWNLOAD_DISMISS_GRACE_MS, 1000 + DOWNLOAD_DISMISS_GRACE_MS),
+  0
+);
 
 // --- a full session, step by step -----------------------------------------
 // This is the sequence that used to break: a new session kept the values of

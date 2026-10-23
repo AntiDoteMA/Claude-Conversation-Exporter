@@ -24,6 +24,10 @@ The extension runs entirely in your browser profile. It has no analytics, teleme
 - Lets you correct any field manually before copying or downloading.
 - Stores working data only in `chrome.storage.local` in the current browser profile.
 
+## Support the project
+
+This extension is free and always will be. If it is useful to you and you would like to support its development, you can [buy me a coffee on Ko-fi](https://ko-fi.com/antidotema). The support link is optional and opens in a new tab.
+
 ## Installation
 
 Choose either the packaged extension or the source folder.
@@ -152,8 +156,10 @@ background.js          Request capture and local storage
 content.js             Claude-page context and export request
 popup.html/.css/.js    Extension interface, curl builder, and download
 lib/parse.js           Shared parsing and formatting helpers
+lib/popup-lifecycle.js  Guarded popup dismissal behavior
 curl-template.txt      Default curl command template
 icons/                 Extension icons
+screenshot/             README and package screenshots
 tools/selftest.js         Node.js extension self-tests
 tools/test_transcript_extract.py  Python transcript-extractor tests
 tools/package-crx.ps1     Builds and signs the distributable CRX on Windows
