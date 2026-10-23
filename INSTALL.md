@@ -193,6 +193,10 @@ curl-template.txt      default curl command with ##placeholders##
 icons/                 generated icons
 tools/make-icons.ps1   regenerates the icons
 tools/selftest.js      unit tests for the shared helpers (node tools/selftest.js)
+tools/test_transcript_extract.py  tests for the local transcript extractor
 tools/package-crx.ps1  builds and signs the distributable CRX on Windows
+transcript_extract.py  local conversation-to-transcript extractor
+transcript_extract_README.md  transcript extractor documentation
+run_both.bat           generates Markdown and JSON transcripts on Windows
 Crx/                   prepackaged extension package
 ```

@@ -58,6 +58,19 @@ See [`INSTALL.md`](INSTALL.md) for more detailed operating instructions.
 
 The request runs from the open Claude page, so the browser supplies the live authenticated session automatically.
 
+### Optional: extract a compact transcript
+
+This repository also includes a standalone Python utility that turns the downloaded `conversation.json` into a compact, agent-ready Markdown or JSON transcript. It preserves user requests, assistant narration, thinking summaries, tool activity, errors, and a derived reference index while omitting bulky tool payloads by default.
+
+```bash
+python transcript_extract.py --out transcript.md
+python transcript_extract.py --format json --out transcript.json
+```
+
+The extractor runs entirely locally, uses only Python's standard library, and does not upload the conversation. Its output can still contain private conversation content, so review it before sharing or committing it.
+
+See [`transcript_extract_README.md`](transcript_extract_README.md) for supported export shapes, all options, examples, and the output format.
+
 ### Copy a curl command
 
 1. Open a Claude conversation and click the extension icon.
@@ -120,13 +133,14 @@ The source is small and contains no remote imports, analytics SDKs, ad code, or 
 
 ## Development
 
-The extension has no build step and no runtime dependencies. Node.js is only needed for the helper tests.
+The extension has no build step and no runtime dependencies. Node.js is only needed for the helper tests. The optional transcript extractor uses Python's standard library and has no third-party dependencies.
 
 ```bash
 npm test
+npm run test:transcript
 ```
 
-The test suite covers URL and ID parsing, curl-template rendering, header parsing, cookie sanitization, source precedence, and session-refresh behavior.
+The JavaScript suite covers URL and ID parsing, curl-template rendering, header parsing, cookie sanitization, source precedence, and session-refresh behavior. The Python suite covers transcript extraction, supported export shapes, output filters, result handling, and session selection.
 
 Project layout:
 
@@ -138,9 +152,13 @@ popup.html/.css/.js    Extension interface, curl builder, and download
 lib/parse.js           Shared parsing and formatting helpers
 curl-template.txt      Default curl command template
 icons/                 Extension icons
-tools/selftest.js      Node.js self-tests
-tools/package-crx.ps1  Builds and signs the distributable CRX on Windows
-Crx/                   Prepackaged extension package
+tools/selftest.js         Node.js extension self-tests
+tools/test_transcript_extract.py  Python transcript-extractor tests
+tools/package-crx.ps1     Builds and signs the distributable CRX on Windows
+transcript_extract.py     Local conversation-to-transcript extractor
+transcript_extract_README.md  Transcript extractor documentation
+run_both.bat              Generates Markdown and JSON transcripts on Windows
+Crx/                      Prepackaged extension package
 ```
 
 ## License

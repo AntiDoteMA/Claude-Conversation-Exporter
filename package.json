@@ -5,6 +5,7 @@
   "description": "A local Chrome extension for exporting the currently open Claude conversation as JSON or a reproducible curl request.",
   "scripts": {
     "test": "node tools/selftest.js",
+    "test:transcript": "python -m unittest discover -s tools -p test_*.py -v",
     "package:crx": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package-crx.ps1"
   }
 }

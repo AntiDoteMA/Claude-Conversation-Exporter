@@ -1,5 +1,8 @@
 # Local and downloaded exports
 conversation.json
+conversations.json
+transcript.json
+transcript.md
 *.curl
 *.curl.txt
 

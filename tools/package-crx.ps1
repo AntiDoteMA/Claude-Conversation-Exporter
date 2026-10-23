@@ -36,7 +36,10 @@ $files = @(
     "popup.css",
     "popup.html",
     "popup.js",
-    "README.md"
+    "README.md",
+    "run_both.bat",
+    "transcript_extract.py",
+    "transcript_extract_README.md"
 )
 $directories = @("icons", "lib", "tools")
 
