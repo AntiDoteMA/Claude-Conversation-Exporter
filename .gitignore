@@ -1,0 +1,22 @@
+# Local and downloaded exports
+conversation.json
+*.curl
+*.curl.txt
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Node and editor files
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Ext_pom_key/*
+curl-template.txt

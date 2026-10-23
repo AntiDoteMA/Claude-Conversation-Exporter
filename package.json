@@ -1,0 +1,10 @@
+{
+  "name": "claude-conversation-exporter",
+  "private": true,
+  "type": "module",
+  "description": "A local Chrome extension for exporting the currently open Claude conversation as JSON or a reproducible curl request.",
+  "scripts": {
+    "test": "node tools/selftest.js",
+    "package:crx": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package-crx.ps1"
+  }
+}

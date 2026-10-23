@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Claude Conversation Exporter</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Claude Conversation Exporter</h1>
+      <div id="status" class="status">Loading…</div>
+    </header>
+
+    <section class="toolbar">
+      <button id="refresh" class="btn primary" title="Reload the claude.ai tab so the app emits fresh requests">
+        Re-capture (reload tab)
+      </button>
+      <button id="reload-template" class="btn" title="Reload values from storage">Refresh values</button>
+      <label class="check">
+        <input type="checkbox" id="raw-mode" />
+        <span>Verbatim headers</span>
+      </label>
+    </section>
+
+    <section class="toolbar">
+      <button id="scan-now" class="btn" title="Ask the open claude.ai tabs for their current URL and cookies">
+        Scan open tabs
+      </button>
+      <button id="reset-capture" class="btn" title="Delete the current capture and capture history from extension storage">
+        Reset capture
+      </button>
+    </section>
+
+    <section class="actions export-actions" aria-label="Export conversation">
+      <button id="copy-curl" class="btn primary wide">Copy curl command</button>
+      <button id="fetch-download" class="btn wide accent-ghost">
+        Download conversation JSON
+      </button>
+      <div id="fetch-status" class="fetch-status hidden"></div>
+    </section>
+
+    <details id="request-details" class="request-details">
+      <summary>
+        <span class="summary-title">Captured request details</span>
+        <span id="details-status" class="details-status">0/9 captured</span>
+        <span class="chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="details-content">
+        <p class="details-hint">
+          Advanced values used to build the export request. The cookie contains live session data.
+        </p>
+        <section id="fields" class="fields"></section>
+        <section class="actions details-actions" aria-label="Copy captured values">
+          <div class="row">
+            <button id="copy-vars" class="btn">Copy request details</button>
+            <button id="copy-cookie" class="btn">Copy cookie</button>
+            <button id="copy-json" class="btn">Copy JSON</button>
+          </div>
+          <button id="copy-raw" class="btn wide">Copy raw captured headers</button>
+        </section>
+      </div>
+    </details>
+
+
+    <section class="meta">
+      <div class="meta-row">
+        <span class="meta-key">Captured</span>
+        <span id="meta-ts" class="meta-val">–</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Request</span>
+        <span id="meta-url" class="meta-val mono wrap">–</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Observed</span>
+        <span id="meta-requests" class="meta-val mono">–</span>
+      </div>
+      <div id="meta-warn" class="warn hidden"></div>
+    </section>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
