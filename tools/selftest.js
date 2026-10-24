@@ -18,6 +18,10 @@ import {
   applyPageContext,
   applyCookieHeader,
   applyRequestIds,
+  parseCodeSessionId,
+  codeSessionEventsUrl,
+  nextCodeEventsCursor,
+  mergeCodeSessionEvents,
 } from '../lib/parse.js';
 import {
   DOWNLOAD_DISMISS_GRACE_MS,
@@ -337,6 +341,53 @@ check(
   'organization id from document.cookie: source',
   docOnly.organizations.source,
   'page-cookie:lastActiveOrg'
+);
+
+// --- Claude Code sessions ------------------------------------------------
+const SESSION = 'session_01AbCdEfGhIjKlMnOpQrStUv';
+check(
+  'code session id from the page url',
+  parseCodeSessionId(`https://claude.ai/code/${SESSION}`),
+  SESSION
+);
+check(
+  'code session id with a query string',
+  parseCodeSessionId(`https://claude.ai/code/${SESSION}?tab=diff`),
+  SESSION
+);
+check('no code session on a chat', parseCodeSessionId(`https://claude.ai/chat/${CHAT1}`), null);
+check('no code session on the code home page', parseCodeSessionId('https://claude.ai/code'), null);
+check(
+  'no code session on another site',
+  parseCodeSessionId(`https://example.com/code/${SESSION}`),
+  null
+);
+check('no code session without a url', parseCodeSessionId(''), null);
+
+check(
+  'first events page',
+  codeSessionEventsUrl(SESSION),
+  `https://claude.ai/v1/code/sessions/${SESSION}/events?limit=200&sort_order=desc`
+);
+check(
+  'next events page',
+  codeSessionEventsUrl(SESSION, '6747'),
+  `https://claude.ai/v1/code/sessions/${SESSION}/events?limit=200&sort_order=desc&cursor=6747`
+);
+
+const ev = (seq) => ({ event_id: `e${seq}`, sequence_num: String(seq) });
+check('next cursor', nextCodeEventsCursor({ data: [ev(3)], next_cursor: '3' }, null), '3');
+check('last page has no cursor', nextCodeEventsCursor({ data: [ev(1)] }, '2'), null);
+check('empty page ends the export', nextCodeEventsCursor({ data: [], next_cursor: '1' }, '2'), null);
+check('a cursor that does not move ends the export', nextCodeEventsCursor({ data: [ev(1)], next_cursor: '2' }, '2'), null);
+
+check(
+  'events are merged oldest first without duplicates',
+  mergeCodeSessionEvents([
+    { data: [ev(10), ev(9)] },
+    { data: [ev(9), ev(8)] },
+  ]).map((e) => e.sequence_num),
+  ['8', '9', '10']
 );
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll checks passed');

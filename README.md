@@ -20,6 +20,7 @@ The extension runs entirely in your browser profile. It has no analytics, teleme
 - Captures the request headers Claude sends for its own web app.
 - Keeps captured values fresh when you open a new conversation or start a new session.
 - Downloads the conversation API response as formatted JSON.
+- Exports Claude Code sessions (`claude.ai/code/session_…`) with the same button.
 - Generates a standard `curl.exe` command from either the included template or the verbatim captured headers.
 - Lets you correct any field manually before copying or downloading.
 - Stores working data only in `chrome.storage.local` in the current browser profile.
@@ -64,6 +65,22 @@ See [`INSTALL.md`](INSTALL.md) for more detailed operating instructions.
 
 The request runs from the open Claude page, so the browser supplies the live authenticated session automatically.
 
+### Claude Code sessions
+
+The same button also exports Claude Code sessions on the web:
+
+1. Open the session at `https://claude.ai/code/session_…`.
+2. Click the extension icon and press **Download conversation JSON**.
+3. Keep the popup open until it reports the saved file. A long session takes a while (about 7,000 events, 35 MB, took 30 seconds in testing), and closing the popup stops the export.
+
+The extension reads the session and all of its events (pages of 200, oldest first in the file) and saves `session_<id>.json`:
+
+```json
+{ "session": { … }, "events": [ … ], "complete": true }
+```
+
+`complete` is `false` only if the export stopped at the safety limit of 100,000 events. The events include tool calls and their output, so the file can contain the contents of files and commands the session touched. The curl command and the transcript extractor still cover chat conversations only.
+
 ### Optional: extract a compact transcript
 
 This repository also includes a standalone Python utility that turns the downloaded `conversation.json` into a compact, agent-ready Markdown or JSON transcript. It preserves user requests, assistant narration, thinking summaries, tool activity, errors, and a derived reference index while omitting bulky tool payloads by default.
@@ -93,7 +110,7 @@ For Windows, the generated command uses `curl.exe`. On other platforms, you can 
 
 ### What leaves your browser
 
-The extension itself sends no data to an analytics service or any third-party server. Its only network request is the conversation request to `claude.ai`, initiated when you choose **Download conversation JSON**.
+The extension itself sends no data to an analytics service or any third-party server. Its only network requests are the conversation (or Claude Code session) requests to `claude.ai`, initiated when you choose **Download conversation JSON**.
 
 When you copy a curl command, that command later sends the captured request data and cookies to `claude.ai`. The extension cannot control where a copied command is subsequently run.
 
