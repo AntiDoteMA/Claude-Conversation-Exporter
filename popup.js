@@ -314,10 +314,17 @@ async function requestJson(url, headers, tabId) {
   const res = await chrome.runtime.sendMessage({ type: 'run-request', url, headers, tabId });
   if (!res) throw new Error('No response from the extension.');
   if (!res.ok) {
+    // The API explains a rejected request in `error.message`.
+    let detail = '';
+    try {
+      detail = JSON.parse(res.body).error.message || '';
+    } catch (e) {
+      /* not a JSON error body */
+    }
     throw new Error(
-      res.status
+      (res.status
         ? `Request failed: HTTP ${res.status} ${res.statusText || ''}`.trim()
-        : `Request failed: ${res.error || 'unknown error'}`
+        : `Request failed: ${res.error || 'unknown error'}`) + (detail ? ` - ${detail}` : '')
     );
   }
   return JSON.parse(res.body || 'null');
