@@ -307,14 +307,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  // Perform a GET from a claude.ai tab, so the browser sends the session
+  // cookies. `msg.tabId` picks the tab; without it a chat tab is used.
   if (msg.type === 'run-request') {
     enqueue(async () => {
       try {
         const tabs = await chrome.tabs.query({
           url: ['https://claude.ai/*', 'https://*.claude.ai/*'],
         });
+        // The popup names the tab when the request belongs to it (a Claude
+        // Code session); otherwise any chat tab will do.
         const tab =
-          tabs.find((t) => /claude\.ai\/chat\//.test(t.url || '')) || tabs[0];
+          (msg.tabId && tabs.find((t) => t.id === msg.tabId)) ||
+          tabs.find((t) => /claude\.ai\/chat\//.test(t.url || '')) ||
+          tabs[0];
         if (!tab) {
           sendResponse({ ok: false, error: 'No claude.ai tab is open.' });
           return;

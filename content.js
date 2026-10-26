@@ -24,6 +24,7 @@
     'anthropic-client-sha',
     'anthropic-client-version',
     'anthropic-device-id',
+    'anthropic-version',
     'x-activity-session-id',
     'content-type',
     'priority',

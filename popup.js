@@ -4,6 +4,12 @@ import {
   DEFAULTS,
   sanitizeCookie,
   parseCurl,
+  CODE_API_VERSION,
+  parseCodeSessionId,
+  codeSessionUrl,
+  codeSessionEventsUrl,
+  nextCodeEventsCursor,
+  mergeCodeSessionEvents,
 } from './lib/parse.js';
 import {
   DOWNLOAD_DISMISS_GRACE_MS,
@@ -12,6 +18,8 @@ import {
 
 const STORAGE_KEY = 'claudeCapture';
 const DOWNLOAD_URL_LIFETIME_MS = 30000;
+// Safety stop for the paged event export (200 events per page).
+const MAX_CODE_EVENT_PAGES = 500;
 
 let downloadInProgress = false;
 let dismissHoldUntil = 0;
@@ -39,6 +47,9 @@ const FIELDS = [
 ];
 
 let capture = { fields: {}, rawHeaders: {}, ts: 0, url: '' };
+// The Claude Code session shown in the active tab ({ id, tabId }), if any.
+// The download button exports it instead of a chat conversation.
+let codeSession = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -158,6 +169,11 @@ function render() {
 
   const warn = $('meta-warn');
   const warnings = [];
+  // A Claude Code session needs none of the captured chat values.
+  if (codeSession) {
+    warn.classList.add('hidden');
+    return;
+  }
   if (!fieldValue('chat_conversations')) {
     warnings.push(
       'No chat id — open a conversation (https://claude.ai/chat/<id>) on claude.ai, then press "Scan open tabs".'
@@ -293,12 +309,86 @@ function prettyPrint(body) {
   }
 }
 
+// Run a GET request from a claude.ai tab and return the parsed JSON body.
+async function requestJson(url, headers, tabId) {
+  const res = await chrome.runtime.sendMessage({ type: 'run-request', url, headers, tabId });
+  if (!res) throw new Error('No response from the extension.');
+  if (!res.ok) {
+    // The API explains a rejected request in `error.message`.
+    let detail = '';
+    try {
+      detail = JSON.parse(res.body).error.message || '';
+    } catch (e) {
+      /* not a JSON error body */
+    }
+    throw new Error(
+      (res.status
+        ? `Request failed: HTTP ${res.status} ${res.statusText || ''}`.trim()
+        : `Request failed: ${res.error || 'unknown error'}`) + (detail ? ` - ${detail}` : '')
+    );
+  }
+  return JSON.parse(res.body || 'null');
+}
+
+// Find out whether the active tab shows a Claude Code session.
+async function detectCodeSession() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const id = tab && parseCodeSessionId(tab.url);
+    codeSession = id ? { id, tabId: tab.id } : null;
+  } catch (e) {
+    codeSession = null;
+  }
+}
+
+// Export a Claude Code session: its metadata plus every event, oldest first.
+async function downloadCodeSession({ id, tabId }) {
+  const headers = { 'anthropic-version': CODE_API_VERSION };
+
+  setFetchStatus('Fetching Claude Code session...', 'busy');
+  const session = await requestJson(codeSessionUrl(id), headers, tabId);
+
+  const pages = [];
+  let cursor = null;
+  let fetched = 0;
+  let complete = false;
+  for (let i = 0; i < MAX_CODE_EVENT_PAGES; i++) {
+    const page = await requestJson(codeSessionEventsUrl(id, cursor), headers, tabId);
+    pages.push(page);
+    fetched += (page && Array.isArray(page.data) ? page.data.length : 0);
+    setFetchStatus(`Fetching Claude Code session... ${fetched.toLocaleString()} events`, 'busy');
+    cursor = nextCodeEventsCursor(page, cursor);
+    if (!cursor) {
+      complete = true;
+      break;
+    }
+  }
+
+  const events = mergeCodeSessionEvents(pages);
+  const text = JSON.stringify({ session, events, complete }, null, 2);
+  const filename = `${id}.json`;
+  downloadJson(filename, text);
+  const bytes = new Blob([text]).size;
+  setFetchStatus(
+    `Saved ${filename} (${events.length.toLocaleString()} events, ${bytes.toLocaleString()} bytes)` +
+      (complete ? '' : ' - stopped early, the session is very long'),
+    complete ? 'ok' : 'err'
+  );
+  toast(`${filename} downloaded`);
+}
+
 async function fetchAndDownload() {
   const btn = $('fetch-download');
   btn.disabled = true;
   downloadInProgress = true;
 
   try {
+    await detectCodeSession();
+    if (codeSession) {
+      await downloadCodeSession(codeSession);
+      return;
+    }
+
     if (!fieldValue('chat_conversations')) {
       setFetchStatus('No conversation id - open a chat on claude.ai first.', 'err');
       return;
@@ -488,7 +578,9 @@ function init() {
     }
   });
 
-  loadCapture().then(() => scanTabs(true));
+  detectCodeSession()
+    .then(loadCapture)
+    .then(() => scanTabs(true));
 }
 
 document.addEventListener('DOMContentLoaded', init);
